@@ -67,6 +67,11 @@ public class TbotTelegram extends TelegramLongPollingBot {
         }
     }
 
-    public void sendMessageToChat(Long chatId, String s) {
+    /**
+     * 외부에서 메시지를 보낼 수 있도록 public 메서드 추가
+     * (알림 서비스에서 사용)
+     */
+    public void sendMessageToChat(Long chatId, String message) {
+        sendMessage(chatId, message);
     }
 }

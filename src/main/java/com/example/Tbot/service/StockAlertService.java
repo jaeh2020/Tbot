@@ -1,6 +1,7 @@
 package com.example.Tbot.service;
 
 import com.example.Tbot.telegram.TbotTelegram;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +23,7 @@ public class StockAlertService {
     // 이전 가격 저장
     private final Map<String, String> previousPrices = new ConcurrentHashMap<>();
 
-    public StockAlertService(StockService stockService, TbotTelegram telegram) {
+    public StockAlertService(StockService stockService, @Lazy TbotTelegram telegram) {
         this.stockService = stockService;
         this.telegram = telegram;
     }
