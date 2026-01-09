@@ -66,4 +66,7 @@ public class TbotTelegram extends TelegramLongPollingBot {
             e.printStackTrace();
         }
     }
+
+    public void sendMessageToChat(Long chatId, String s) {
+    }
 }
