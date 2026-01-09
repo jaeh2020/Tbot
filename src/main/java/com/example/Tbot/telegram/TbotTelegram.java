@@ -1,0 +1,69 @@
+package com.example.Tbot.telegram;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Update;
+
+@Component
+public class TbotTelegram extends TelegramLongPollingBot {
+
+    @Value("${telegram.bot.token}")
+    private String token;
+
+    @Value("${telegram.bot.username}")
+    private String username;
+
+    private final CommandRouter commandRouter;
+
+    public TbotTelegram(CommandRouter commandRouter) {
+        this.commandRouter = commandRouter;
+    }
+
+    @Override
+    public String getBotUsername() {
+        return username;
+    }
+
+    @Override
+    public String getBotToken() {
+        return token;
+    }
+
+    @Override
+    public void onUpdateReceived(Update update) {
+        System.out.println("📩 업데이트 수신");
+
+        if (!update.hasMessage() || !update.getMessage().hasText()) {
+            return;
+        }
+
+        String text = update.getMessage().getText();
+        System.out.println("📩 메시지: " + text);
+
+        Long chatId = update.getMessage().getChatId();
+        String response = commandRouter.route(text);
+
+        sendMessage(chatId, response);
+    }
+
+    private void sendMessage(Long chatId, String message) {
+        System.out.println("📤 sendMessage 호출됨");
+        System.out.println("📤 chatId = " + chatId);
+        System.out.println("📤 message = " + message);
+
+        SendMessage sendMessage = SendMessage.builder()
+                .chatId(chatId.toString())
+                .text(message)
+                .build();
+
+        try {
+            execute(sendMessage);
+            System.out.println("✅ 메시지 전송 성공");
+        } catch (Exception e) {
+            System.err.println("❌ 텔레그램 메시지 전송 실패");
+            e.printStackTrace();
+        }
+    }
+}
