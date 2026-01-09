@@ -8,7 +8,7 @@ import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 @Configuration
 public class TelegramBotConfig {
-    // TEST
+
     private final TbotTelegram tbotTelegram;
 
     public TelegramBotConfig(TbotTelegram tbotTelegram) {
