@@ -5,8 +5,6 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,6 +13,7 @@ public class StockService {
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final PortfolioService portfolioService;
 
     // 주요 종목 코드 매핑
     private final Map<String, String> stockCodes = new HashMap<>() {{
@@ -30,10 +29,21 @@ public class StockService {
         put("kb금융", "105560");
     }};
 
+    public StockService(PortfolioService portfolioService) {
+        this.portfolioService = portfolioService;
+    }
+
     /**
-     * 주식 현재가 조회 (네이버 금융 API 사용)
+     * 주식 현재가 조회 (포트폴리오 정보 포함)
      */
     public String getStockPrice(String stockName) {
+        return getStockPrice(stockName, null);
+    }
+
+    /**
+     * 주식 현재가 조회 (포트폴리오 정보 포함 가능)
+     */
+    public String getStockPrice(String stockName, Long chatId) {
         try {
             String code = getStockCode(stockName);
             if (code == null) {
@@ -49,27 +59,36 @@ public class StockService {
             JsonNode result = root.path("result").path("areas").get(0).path("datas").get(0);
 
             String name = result.path("nm").asText();
-            String currentPrice = result.path("nv").asText();
+            String currentPriceStr = result.path("nv").asText();
             String changePrice = result.path("cv").asText();
             String changeRate = result.path("cr").asText();
             String volume = result.path("aq").asText();
 
+            // 현재가 숫자로 변환
+            double currentPrice = Double.parseDouble(currentPriceStr.replace(",", ""));
+
             // 등락 상태 표시
             String arrow = changePrice.startsWith("-") ? "🔻" : "🔺";
 
-            return String.format("""
-                    📊 %s (%s)
-                    
-                    현재가: %s원
-                    %s 전일대비: %s원 (%s%%)
-                    거래량: %s주
-                    
-                    ⏰ 실시간 조회
-                    """,
+            String basicInfo = String.format(
+                    "📊 %s (%s)\n\n" +
+                            "현재가: %s원\n" +
+                            "%s 전일대비: %s원 (%s%%)\n" +
+                            "거래량: %s주\n\n" +
+                            "⏰ 실시간 조회",
                     name, code,
-                    formatNumber(currentPrice),
+                    formatNumber(currentPriceStr),
                     arrow, changePrice, changeRate,
-                    formatNumber(volume));
+                    formatNumber(volume)
+            );
+
+            // 포트폴리오 정보 추가
+            if (chatId != null && portfolioService.hasStock(chatId, stockName)) {
+                String profitInfo = portfolioService.calculateProfit(chatId, stockName, currentPrice);
+                return basicInfo + profitInfo;
+            }
+
+            return basicInfo;
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -218,5 +237,27 @@ public class StockService {
         StringBuilder result = new StringBuilder("📋 조회 가능한 주요 종목\n\n");
         stockCodes.keySet().forEach(name -> result.append("• ").append(name).append("\n"));
         return result.toString();
+    }
+
+    /**
+     * 현재가를 숫자로 반환 (포트폴리오 계산용)
+     */
+    public double getCurrentPriceAsNumber(String stockName) {
+        try {
+            String code = getStockCode(stockName);
+            if (code == null) return 0;
+
+            String url = "https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:" + code;
+            String response = restTemplate.getForObject(url, String.class);
+
+            JsonNode result = objectMapper.readTree(response).path("result")
+                    .path("areas").get(0).path("datas").get(0);
+
+            String currentPrice = result.path("nv").asText();
+            return Double.parseDouble(currentPrice.replace(",", ""));
+
+        } catch (Exception e) {
+            return 0;
+        }
     }
 }

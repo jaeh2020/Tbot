@@ -43,7 +43,9 @@ public class TbotTelegram extends TelegramLongPollingBot {
         System.out.println("📩 메시지: " + text);
 
         Long chatId = update.getMessage().getChatId();
-        String response = commandRouter.route(text);
+
+        // ⭐ chatId를 함께 전달 (알림 기능에 필요)
+        String response = commandRouter.route(text, chatId);
 
         sendMessage(chatId, response);
     }
@@ -68,8 +70,8 @@ public class TbotTelegram extends TelegramLongPollingBot {
     }
 
     /**
-     * 외부에서 메시지를 보낼 수 있도록 public 메서드 추가
-     * (알림 서비스에서 사용)
+     * 외부에서 메시지를 보낼 수 있도록 public 메서드
+     * (StockAlertService에서 실시간 알림을 보낼 때 사용)
      */
     public void sendMessageToChat(Long chatId, String message) {
         sendMessage(chatId, message);
