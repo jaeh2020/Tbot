@@ -81,6 +81,39 @@ public class StockService {
         put("포스코홀딩스", new StockInfo("005490", "포스코홀딩스", "KOSPI"));
         put("NAVER", new StockInfo("035420", "네이버", "KOSPI"));
         put("삼전", new StockInfo("005930", "삼성전자", "KOSPI")); // 별칭
+
+        // 인기 바이오/제약 (KOSDAQ)
+        put("이수페타시스", new StockInfo("007660", "이수페타시스", "KOSDAQ"));
+        put("HLB", new StockInfo("028300", "HLB", "KOSDAQ"));
+        put("HLB생명과학", new StockInfo("067630", "HLB생명과학", "KOSDAQ"));
+        put("알테오젠", new StockInfo("196170", "알테오젠", "KOSDAQ"));
+        put("메디톡스", new StockInfo("086900", "메디톡스", "KOSDAQ"));
+        put("파마리서치", new StockInfo("214450", "파마리서치", "KOSDAQ"));
+        put("레고켐바이오", new StockInfo("141080", "레고켐바이오", "KOSDAQ"));
+
+        // 인기 2차전지/소재 (KOSDAQ)
+        put("엘앤에프", new StockInfo("066970", "엘앤에프", "KOSDAQ"));
+        put("에코프로머티", new StockInfo("450080", "에코프로머티", "KOSDAQ"));
+        put("포스코엠텍", new StockInfo("009520", "포스코엠텍", "KOSDAQ"));
+        put("천보", new StockInfo("278280", "천보", "KOSDAQ"));
+        put("리노공업", new StockInfo("058470", "리노공업", "KOSDAQ"));
+
+        // 인기 반도체/부품 (KOSDAQ)
+        put("에이피알", new StockInfo("123420", "에이피알", "KOSDAQ"));
+        put("원익IPS", new StockInfo("240810", "원익IPS", "KOSDAQ"));
+        put("테스", new StockInfo("095610", "테스", "KOSDAQ"));
+        put("피에스케이", new StockInfo("319660", "피에스케이", "KOSDAQ"));
+
+        // 인기 IT/게임 (KOSDAQ)
+        put("펄어비스", new StockInfo("263750", "펄어비스", "KOSDAQ"));
+        put("위메이드", new StockInfo("112040", "위메이드", "KOSDAQ"));
+        put("카카오게임즈", new StockInfo("293490", "카카오게임즈", "KOSDAQ"));
+
+        // 기타 인기 종목
+        put("금양", new StockInfo("001570", "금양", "KOSPI"));
+        put("현대위아", new StockInfo("011210", "현대위아", "KOSPI"));
+        put("삼성에스디에스", new StockInfo("018260", "삼성에스디에스", "KOSPI"));
+        put("두산에너빌리티", new StockInfo("034020", "두산에너빌리티", "KOSPI"));
     }};
 
     static class StockInfo {
