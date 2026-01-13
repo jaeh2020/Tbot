@@ -1,10 +1,6 @@
 package com.example.Tbot.telegram;
 
-import com.example.Tbot.service.CliService;
-import com.example.Tbot.service.StockService;
-import com.example.Tbot.service.StockAlertService;
-import com.example.Tbot.service.ContinuousMonitoringService;
-import com.example.Tbot.service.PortfolioService;
+import com.example.Tbot.service.*;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -15,17 +11,23 @@ public class CommandRouter {
     private final StockAlertService stockAlertService;
     private final ContinuousMonitoringService monitoringService;
     private final PortfolioService portfolioService;
+    private final SystemDiagnosticService diagnosticService;
+
+    // 개발자 계정 (환경변수나 설정 파일에서 관리 권장)
+    private static final Long DEVELOPER_CHAT_ID = 8501154254L; // 실제 개발자 chatId로 변경
 
     public CommandRouter(CliService cliService,
                          StockService stockService,
                          StockAlertService stockAlertService,
                          ContinuousMonitoringService monitoringService,
-                         PortfolioService portfolioService) {
+                         PortfolioService portfolioService,
+                         SystemDiagnosticService diagnosticService) {
         this.cliService = cliService;
         this.stockService = stockService;
         this.stockAlertService = stockAlertService;
         this.monitoringService = monitoringService;
         this.portfolioService = portfolioService;
+        this.diagnosticService = diagnosticService;
     }
 
     public String route(String message) {
@@ -39,6 +41,40 @@ public class CommandRouter {
             String command = message.substring(5);
             cliService.executeAsync(command);
             return "✅ CLI 실행 시작: " + command;
+        }
+
+        // 🔍 종목 검색 (NEW!)
+        if (message.startsWith("/search ") || message.startsWith("/find ")) {
+            String keyword = message.substring(message.indexOf(" ") + 1).trim();
+            return stockService.searchStocks(keyword, chatId);
+        }
+
+        // 종목 코드로 직접 조회
+        if (message.startsWith("/code ")) {
+            String code = message.substring(6).trim();
+            return stockService.getStockByCode(code);
+        }
+
+        // 💡 숫자만 입력한 경우 - 검색 결과에서 선택
+        if (message.matches("^\\d+$")) {
+            if (chatId == null) {
+                return "❓ 알 수 없는 명령어입니다.\n/help를 입력하여 사용법을 확인하세요.";
+            }
+
+            int index = Integer.parseInt(message);
+
+            // 검색 결과 캐시에서 가져오기
+            var searchResult = stockService.getSearchResultByIndex(chatId, index);
+
+            if (searchResult == null) {
+                return "❌ 검색 결과가 없습니다.\n\n" +
+                        "💡 먼저 /search 명령어로 종목을 검색하세요.\n" +
+                        "예: /search 현대\n\n" +
+                        "검색 결과는 5분간 유지됩니다.";
+            }
+
+            // 선택된 종목 조회
+            return stockService.getStockPrice(searchResult.name, chatId);
         }
 
         // ⭐ 포트폴리오에 주식 추가
@@ -85,8 +121,8 @@ public class CommandRouter {
         }
 
         // 주식 조회 명령어 (포트폴리오 정보 포함)
-        if (message.startsWith("/stock ")) {
-            String stockName = message.substring(7).trim();
+        if (message.startsWith("/stock ") || message.startsWith("/주식 ")) {
+            String stockName = message.substring(message.indexOf(" ") + 1).trim();
             return stockService.getStockPrice(stockName, chatId);
         }
 
@@ -98,18 +134,18 @@ public class CommandRouter {
         }
 
         // 시장 지수
-        if (message.equals("/market")) {
+        if (message.equals("/market") || message.equals("/지수")) {
             return stockService.getMarketIndex();
         }
 
         // 인기 종목
-        if (message.equals("/popular")) {
+        if (message.equals("/popular") || message.equals("/인기")) {
             return stockService.getPopularStocks();
         }
 
         // 지원 종목 리스트
         if (message.equals("/list")) {
-            return stockService.getSupportedStocks();
+            return stockService.getStockList();
         }
 
         // 실시간 알림 구독 (가격 변동 시에만 알림, 포트폴리오 정보 포함)
@@ -203,31 +239,68 @@ public class CommandRouter {
             return """
                     📱 텔레그램 주식 봇
                     
-                    💰 주식 조회
-                    /stock <종목명>          - 주식 현재가 조회
-                    /stocks <종목1>,<종목2>  - 여러 종목 조회
-                    /market                  - 코스피/코스닥 지수
-                    /popular                 - 인기 검색 종목 TOP10
-                    /list                    - 조회 가능한 종목 리스트
+                    🔍 종목 검색
+                    /search <키워드> - 종목 검색 (부분검색 가능)
+                    /stock <종목명> - 주식 현재가 조회
                     
-                    💼 포트폴리오 관리
-                    /add <종목명> <매수가> <수량>  - 보유 주식 추가
-                    /remove <종목명>              - 보유 주식 삭제
-                    /portfolio                    - 내 포트폴리오 조회
+                    📊 시장 정보
+                    /market - 코스피/코스닥 지수
+                    /popular - 인기 검색 종목
                     
-                    🔔 실시간 알림 (가격 변동 시)
-                    /alert <종목명>          - 가격 변동 시 알림
-                    /unalert                 - 알림 해제
+                    💼 포트폴리오
+                    /add <종목명> <매수가> <수량> - 주식 추가
+                    /remove <종목명> - 주식 삭제
+                    /portfolio - 내 포트폴리오
                     
-                    🔄 연속 모니터링 (10초마다)
-                    /monitor <종목명>        - 10초마다 정보 전송
-                    /stop                    - 모니터링/알림 중지
-                    /status                  - 현재 상태 확인
+                    🔔 알림/모니터링
+                    /alert <종목명> - 가격 변동 알림
+                    /monitor <종목명> - 10초마다 모니터링
+                    /stop - 알림/모니터링 중지
+                    /status - 현재 상태
                     
-                    💻 시스템
-                    /cli <command>           - 서버 CLI 실행
-                    /help                    - 도움말
+                    💡 사용 예시
+                    /search 현대 → 현대 관련 종목 검색
+                    /stock 삼성전자 → 시세 조회
+                    /add 카카오 50000 5 → 포트폴리오 추가
                     """;
+        }
+
+        // API 테스트 명령어 (개발자 전용)
+        if (message.equals("/test")) {
+            // 개발자 권한 확인
+            if (chatId == null || !chatId.equals(DEVELOPER_CHAT_ID)) {
+                return "❌ 이 명령어는 개발자만 사용할 수 있습니다.";
+            }
+
+            return diagnosticService.runDiagnostics();
+        }
+
+        // 빠른 API 테스트 (개발자 전용)
+        if (message.equals("/quicktest")) {
+            if (chatId == null || !chatId.equals(DEVELOPER_CHAT_ID)) {
+                return "❌ 이 명령어는 개발자만 사용할 수 있습니다.";
+            }
+
+            try {
+                String testUrl = "https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:005930";
+                org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+                String response = restTemplate.getForObject(testUrl, String.class);
+
+                if (response == null) {
+                    return "❌ API 응답 없음";
+                }
+
+                return "✅ API 정상 작동\n\n" +
+                        "URL: " + testUrl + "\n\n" +
+                        "응답 길이: " + response.length() + "자\n\n" +
+                        "응답 내용 (처음 500자):\n" +
+                        response.substring(0, Math.min(500, response.length()));
+
+            } catch (Exception e) {
+                return "❌ API 테스트 실패\n\n" +
+                        "오류: " + e.getClass().getSimpleName() + "\n" +
+                        "메시지: " + e.getMessage();
+            }
         }
 
         return "❓ 알 수 없는 명령어입니다.\n/help를 입력하여 사용법을 확인하세요.";
