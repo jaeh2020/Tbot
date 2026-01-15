@@ -166,7 +166,10 @@ public class StockService {
             String volume = result.path("aq").asText();
 
             double currentPrice = Double.parseDouble(currentPriceStr.replace(",", ""));
-            String arrow = changePrice.startsWith("-") ? "🔻" : "🔺";
+
+            // 변화율로 상승/하락 판단 (더 정확함)
+            double rateValue = Double.parseDouble(changeRate.replace(",", ""));
+            String arrow = rateValue < 0 ? "🔻" : (rateValue > 0 ? "🔺" : "➖");
 
             String basicInfo = String.format(
                     "📊 %s (%s)\n\n" +
@@ -309,7 +312,9 @@ public class StockService {
             String changeRate = result.path("cr").asText();
             String volume = result.path("aq").asText();
 
-            String arrow = changePrice.startsWith("-") ? "🔻" : "🔺";
+            // 변화율로 상승/하락 판단
+            double rateValue = Double.parseDouble(changeRate.replace(",", ""));
+            String arrow = rateValue < 0 ? "🔻" : (rateValue > 0 ? "🔺" : "➖");
 
             return String.format(
                     "📊 %s (%s)\n\n" +
@@ -384,7 +389,10 @@ public class StockService {
 
             String currentPrice = result.path("nv").asText();
             String changeRate = result.path("cr").asText();
-            String arrow = changeRate.startsWith("-") ? "🔻" : "🔺";
+
+            // 변화율로 상승/하락 판단
+            double rateValue = Double.parseDouble(changeRate.replace(",", ""));
+            String arrow = rateValue < 0 ? "🔻" : (rateValue > 0 ? "🔺" : "➖");
 
             return String.format("%s %s: %s원 (%s%%)",
                     arrow, stockInfo.name, formatNumber(currentPrice), changeRate);
@@ -411,7 +419,10 @@ public class StockService {
                 String price = item.path("closePrice").asText();
                 String changeRate = item.path("compareToPreviousClosePrice").asText();
 
-                String arrow = changeRate.startsWith("-") ? "🔻" : "🔺";
+                // 변화율로 상승/하락 판단
+                double rateValue = Double.parseDouble(changeRate.replace(",", ""));
+                String arrow = rateValue < 0 ? "🔻" : (rateValue > 0 ? "🔺" : "➖");
+
                 result.append(String.format("%d. %s %s: %s원 (%s%%)\n",
                         rank++, arrow, name, formatNumber(price), changeRate));
 
@@ -457,7 +468,9 @@ public class StockService {
             String kospiValue = kospi.path("nv").asText();
             String kospiChange = kospi.path("cv").asText();
             String kospiRate = kospi.path("cr").asText();
-            String kospiArrow = kospiChange.startsWith("-") ? "🔻" : "🔺";
+
+            double kospiRateValue = Double.parseDouble(kospiRate.replace(",", ""));
+            String kospiArrow = kospiRateValue < 0 ? "🔻" : (kospiRateValue > 0 ? "🔺" : "➖");
 
             result.append(String.format("KOSPI: %s %s (%s%%)\n",
                     kospiValue, kospiArrow + kospiChange, kospiRate));
@@ -471,7 +484,9 @@ public class StockService {
             String kosdaqValue = kosdaq.path("nv").asText();
             String kosdaqChange = kosdaq.path("cv").asText();
             String kosdaqRate = kosdaq.path("cr").asText();
-            String kosdaqArrow = kosdaqChange.startsWith("-") ? "🔻" : "🔺";
+
+            double kosdaqRateValue = Double.parseDouble(kosdaqRate.replace(",", ""));
+            String kosdaqArrow = kosdaqRateValue < 0 ? "🔻" : (kosdaqRateValue > 0 ? "🔺" : "➖");
 
             result.append(String.format("KOSDAQ: %s %s (%s%%)",
                     kosdaqValue, kosdaqArrow + kosdaqChange, kosdaqRate));

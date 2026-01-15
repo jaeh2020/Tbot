@@ -120,7 +120,8 @@ public class PortfolioService {
         // 수익률
         double profitRate = (profit / stock.getTotalBuyPrice()) * 100;
 
-        String profitIcon = profit >= 0 ? "🔺" : "🔻";
+        // 수익/손실에 따라 화살표 결정
+        String profitIcon = profit < 0 ? "🔻" : (profit > 0 ? "🔺" : "➖");
         String profitColor = profit >= 0 ? "+" : "";
 
         return String.format(
